@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
@@ -40,10 +41,17 @@ namespace Slingshot.CCB.Utilities.Translators
 
             groups.Add( group );
 
-            // add the department as a group with an id of 9999 + its id to create a unique group id for it
             if ( inputGroup.Element( "department" ) != null && inputGroup.Element( "department" ).Attribute( "id" ) != null && inputGroup.Element( "department" ).Attribute( "id" ).Value.IsNotNullOrWhitespace() )
+            MD5 md5Hasher = MD5.Create();
+            
+            // add the department as a group with id set to hash of 9999 + department id to create a unique group id for it
             {
-                departmentId = ( "9999" + inputGroup.Element( "department" ).Attribute( "id" ).Value ).AsInteger();
+                var hashedDepartmentId = md5Hasher.ComputeHash( Encoding.UTF8.GetBytes( $@"
+                     {9999}
+                     {inputGroup.Element( "department" ).Attribute( "id" ).Value}
+                    " ) );
+                departmentId = Math.Abs( BitConverter.ToInt32( hashedDepartmentId, 0 ) ); // used abs to ensure positive number
+
                 var departmentName = inputGroup.Element( "department" ).Value;
                 if ( departmentName.IsNullOrWhiteSpace() )
                 {
@@ -52,10 +60,16 @@ namespace Slingshot.CCB.Utilities.Translators
                 groups.Add( new Group { Id = departmentId.Value, Name = inputGroup.Element( "department" ).Value, IsActive = true, GroupTypeId = 9999 } );
             }
 
-            // add the director as a group with an id of 9998 + its id to create a unique group id for it
             if ( inputGroup.Element( "director" ) != null && inputGroup.Element( "director" ).Attribute( "id" ) != null && inputGroup.Element( "director" ).Attribute( "id" ).Value.IsNotNullOrWhitespace() )
             {
-                directorId = ( "9998" + inputGroup.Element( "director" ).Attribute( "id" ).Value ).AsInteger();
+                // add the director as a group with an id of 9998 + its id + its department id (if any) to create a unique group id for it
+                var departmentIdString = departmentId.HasValue ? departmentId.Value.ToString() : string.Empty;
+                var hashedDirectorId = md5Hasher.ComputeHash( Encoding.UTF8.GetBytes( $@"
+                     {9998}
+                     {inputGroup.Element( "director" ).Attribute( "id" ).Value}
+                     {departmentIdString}
+                    " ) );
+                directorId = Math.Abs( BitConverter.ToInt32( hashedDirectorId, 0 ) ); // used abs to ensure positive number
 
                 var directorGroup = new Group();
                 directorGroup.Id = directorId.Value;
