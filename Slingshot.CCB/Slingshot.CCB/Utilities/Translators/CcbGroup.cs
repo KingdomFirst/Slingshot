@@ -75,7 +75,7 @@ namespace Slingshot.CCB.Utilities.Translators
 
             if ( exportDirectorsAsGroups && hasDirector )
             {
-                // add the director as a group with an id of 9998 + its id + its department id (if any) to create a unique group id for it
+                // add the director as a group with id set to hash of 9998 + its id + its department id (if any) to create a unique group id for it
                 var departmentIdString = departmentId.HasValue ? departmentId.Value.ToString() : string.Empty;
                 var hashedDirectorId = md5Hasher.ComputeHash( Encoding.UTF8.GetBytes( $@"
                      {9998}
